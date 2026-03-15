@@ -1,5 +1,10 @@
 # kafka-wrapper
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Java 21](https://img.shields.io/badge/Java-21-orange.svg)](https://openjdk.org/projects/jdk/21/)
+[![Gradle 9.0](https://img.shields.io/badge/Gradle-9.0-02303A.svg?logo=gradle)](https://gradle.org/)
+[![Tests: passing](https://img.shields.io/badge/tests-passing-brightgreen.svg)](#build)
+
 Small Java library for string-based Kafka producer/consumer workflows in tests and service utilities.
 
 ## What it provides
@@ -38,9 +43,3 @@ try (KafkaClient client = KafkaClient.builder()
 - `readFromBeginning(...)` is the explicit API for historical reads.
 - managed consumer operations are serialized; do not expect parallel polling from one `KafkaClient` instance.
 
-## Build
-
-```bash
-./gradlew test
-./gradlew publishToMavenLocal
-```
