@@ -384,7 +384,7 @@ public final class KafkaClient implements AutoCloseable {
         private Duration producerCloseTimeout = Duration.ofSeconds(5);
         private KafkaAutoOffsetReset autoOffsetReset = KafkaAutoOffsetReset.EARLIEST;
         private boolean enableAutoCommit = false;
-        private String groupId = "test-kafka-client-" + UUID.randomUUID();
+        private String groupId;
         private String keySerializer = new io.github.stasbykov.infrakafka.serializer.StringSerializer().serializerClassName();
         private String valueSerializer = new io.github.stasbykov.infrakafka.serializer.StringSerializer().serializerClassName();
         private String keyDeserializer = new io.github.stasbykov.infrakafka.deserializer.StringDeserializer().deserializerClassName();
@@ -685,7 +685,9 @@ public final class KafkaClient implements AutoCloseable {
             consumerProps.putIfAbsent(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, valueDeserializer);
             consumerProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, autoOffsetReset.externalValue());
             consumerProps.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, enableAutoCommit);
-            consumerProps.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+            if (groupId != null) {
+                consumerProps.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+            }
 
             ProducerWrapper producerWrapper = new ProducerWrapper(producerProps, producerSendTimeout, producerCloseTimeout);
             ConsumerWrapper consumerWrapper = new ConsumerWrapper(consumerProps, pollTimeout, consumerReadTimeout);

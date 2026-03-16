@@ -209,6 +209,7 @@ public final class ConsumerWrapper implements AutoCloseable {
      */
     public Map<Integer, Long> getCommittedOffsets(String topic) {
         requireNonBlank(topic, "topic");
+        ensureGroupConfigured("getCommittedOffsets");
         try (Consumer<String, String> consumer = createGroupedConsumer()) {
             List<TopicPartition> partitions = topicPartitions(consumer, topic);
             Set<TopicPartition> partitionSet = Set.copyOf(partitions);
@@ -231,6 +232,7 @@ public final class ConsumerWrapper implements AutoCloseable {
         if (topics.isEmpty()) {
             throw new IllegalArgumentException("topics must not be empty");
         }
+        ensureGroupConfigured("subscribe");
         withManagedConsumer(consumer -> {
             consumer.subscribe(List.copyOf(topics));
             return null;
@@ -241,6 +243,7 @@ public final class ConsumerWrapper implements AutoCloseable {
      * Polls records from the managed subscribed consumer.
      */
     public List<KafkaMessage> pollManaged(Duration timeout) {
+        ensureGroupConfigured("pollManaged");
         Duration effectiveTimeout = timeout == null ? pollTimeout : requirePositiveOrZero(timeout, "timeout");
         return withManagedConsumer(consumer -> toMessages(consumer.poll(effectiveTimeout)));
     }
@@ -249,6 +252,7 @@ public final class ConsumerWrapper implements AutoCloseable {
      * Commits offsets for the managed consumer.
      */
     public void commit() {
+        ensureGroupConfigured("commit");
         withManagedConsumer(consumer -> {
             consumer.commitSync();
             return null;
@@ -261,6 +265,7 @@ public final class ConsumerWrapper implements AutoCloseable {
     public void seek(String topic, int partition, long offset) {
         requireNonBlank(topic, "topic");
         requireNonNegative(offset, "offset");
+        ensureGroupConfigured("seek");
         withManagedConsumer(consumer -> {
             TopicPartition topicPartition = new TopicPartition(topic, partition);
             consumer.assign(List.of(topicPartition));
@@ -427,10 +432,12 @@ public final class ConsumerWrapper implements AutoCloseable {
     }
 
     private Consumer<String, String> createGroupedConsumer() {
+        ensureGroupConfigured("createGroupedConsumer");
         return new KafkaConsumer<>(copyOf(props));
     }
 
     private Consumer<String, String> getOrCreateManagedConsumer() {
+        ensureGroupConfigured("managed consumer operations");
         ensureOpen();
         Consumer<String, String> currentConsumer = managedConsumer;
         if (currentConsumer != null) {
@@ -496,6 +503,12 @@ public final class ConsumerWrapper implements AutoCloseable {
     private void ensureOpen() {
         if (closed.get()) {
             throw new IllegalStateException("ConsumerWrapper is already closed");
+        }
+    }
+
+    private void ensureGroupConfigured(String operationName) {
+        if (!props.containsKey(ConsumerConfig.GROUP_ID_CONFIG)) {
+            throw new IllegalStateException("groupId is required for " + operationName);
         }
     }
 

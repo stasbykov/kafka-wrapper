@@ -88,6 +88,18 @@ class KafkaClientBuilderTest {
     }
 
     @Test
+    void buildShouldAllowMissingGroupIdForStatelessConsumerUsage() throws Exception {
+        KafkaClient client = KafkaClient.builder()
+                .bootstrapServers("localhost:9092")
+                .build();
+
+        ConsumerWrapper consumerWrapper = getField(client, "consumerWrapper", ConsumerWrapper.class);
+        Properties consumerProps = getField(consumerWrapper, "props", Properties.class);
+
+        assertNull(consumerProps.get(ConsumerConfig.GROUP_ID_CONFIG));
+    }
+
+    @Test
     void autoOffsetResetStringOverloadShouldNormalizeAndValidateValue() throws Exception {
         KafkaClient client = KafkaClient.builder()
                 .bootstrapServers("localhost:9092")
@@ -127,28 +139,29 @@ class KafkaClientBuilderTest {
         Properties producerProps = getField(producerWrapper, "props", Properties.class);
         Properties consumerProps = getField(consumerWrapper, "props", Properties.class);
 
-        assertEquals("shared-client", producerProps.getProperty(CommonClientConfigs.CLIENT_ID_CONFIG));
-        assertEquals("shared-client", consumerProps.getProperty(CommonClientConfigs.CLIENT_ID_CONFIG));
+        assertAll(
+                () -> assertEquals("shared-client", producerProps.getProperty(CommonClientConfigs.CLIENT_ID_CONFIG)),
+                () -> assertEquals("shared-client", consumerProps.getProperty(CommonClientConfigs.CLIENT_ID_CONFIG)),
 
-        assertEquals("all", producerProps.getProperty(ProducerConfig.ACKS_CONFIG));
-        assertNull(consumerProps.get(ProducerConfig.ACKS_CONFIG));
+                () -> assertEquals("all", producerProps.getProperty(ProducerConfig.ACKS_CONFIG)),
+                () -> assertNull(consumerProps.get(ProducerConfig.ACKS_CONFIG)),
 
-        assertEquals("25", consumerProps.getProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG));
-        assertNull(producerProps.get(ConsumerConfig.MAX_POLL_RECORDS_CONFIG));
+                () -> assertEquals("25", consumerProps.getProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG)),
+                () -> assertNull(producerProps.get(ConsumerConfig.MAX_POLL_RECORDS_CONFIG)),
 
-        assertEquals(org.apache.kafka.common.serialization.StringSerializer.class.getName(),
-                producerProps.getProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG));
-        assertEquals(org.apache.kafka.common.serialization.StringSerializer.class.getName(),
-                producerProps.getProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG));
-        assertNull(producerProps.get(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG));
-        assertNull(producerProps.get(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG));
+                () -> assertEquals(org.apache.kafka.common.serialization.StringSerializer.class.getName(),
+                        producerProps.getProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG)),
+                () -> assertEquals(org.apache.kafka.common.serialization.StringSerializer.class.getName(),
+                        producerProps.getProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG)),
+                () -> assertNull(producerProps.get(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG)),
+                () -> assertNull(producerProps.get(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG)),
 
-        assertEquals(org.apache.kafka.common.serialization.StringDeserializer.class.getName(),
-                consumerProps.getProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG));
-        assertEquals(org.apache.kafka.common.serialization.StringDeserializer.class.getName(),
-                consumerProps.getProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG));
-        assertNull(consumerProps.get(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG));
-        assertNull(consumerProps.get(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG));
+                () -> assertEquals(org.apache.kafka.common.serialization.StringDeserializer.class.getName(),
+                        consumerProps.getProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG)),
+                () -> assertEquals(org.apache.kafka.common.serialization.StringDeserializer.class.getName(),
+                        consumerProps.getProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG)),
+                () -> assertNull(consumerProps.get(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG)),
+                () -> assertNull(consumerProps.get(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG)));
     }
 
     @Test
@@ -171,12 +184,14 @@ class KafkaClientBuilderTest {
             Properties producerProps = getField(producerWrapper, "props", Properties.class);
             Properties consumerProps = getField(consumerWrapper, "props", Properties.class);
 
-            assertEquals("kafka1:9092,kafka2:9092", producerProps.getProperty(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG));
-            assertEquals("SASL_SSL", producerProps.getProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG));
-            assertEquals("/secure/keystore.jks", producerProps.getProperty(SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG));
-            assertEquals("/secure/truststore.jks", producerProps.getProperty(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG));
-            assertEquals("SASL_SSL", consumerProps.getProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG));
-            assertNotNull(consumerProps.getProperty(ConsumerConfig.GROUP_ID_CONFIG));
+            assertAll(
+                    () -> assertEquals("kafka1:9092,kafka2:9092", producerProps.getProperty(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)),
+                    () -> assertEquals("SASL_SSL", producerProps.getProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG)),
+                    () -> assertEquals("/secure/keystore.jks", producerProps.getProperty(SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG)),
+                    () -> assertEquals("/secure/truststore.jks", producerProps.getProperty(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG)),
+                    () -> assertEquals("SASL_SSL", consumerProps.getProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG)),
+                    () -> assertNull(consumerProps.getProperty(ConsumerConfig.GROUP_ID_CONFIG))
+            );
         } finally {
             System.clearProperty(prefix + ".servers");
             System.clearProperty(prefix + ".keystore");
